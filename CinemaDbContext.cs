@@ -42,6 +42,8 @@ namespace CinemaDB
         public virtual DbSet<Worker> Workers { get; set; }
 
         public virtual DbSet<MiniCinema> MiniCinemas { get; set; }
+
+        public virtual DbSet<Actor> Actors { get; set; }
         public CinemaDbContext(DbContextOptions<CinemaDbContext> options)
            : base(options)
         {
@@ -115,6 +117,21 @@ namespace CinemaDB
 
             modelBuilder.Entity<MiniCinema>().ToTable("Minicinemas");
 
+            modelBuilder.Entity<Actor>(entity =>
+            {
+                entity.HasKey(e => e.Id).HasName("PK__Actors__3214EC27FF254FBK");
+                entity.HasMany(d => d.Films).WithMany(p => p.Actors)
+                .UsingEntity(e =>
+                {
+                    e.ToTable("FA");
+
+
+                });
+
+
+            });
+
+
             modelBuilder.Entity<Client>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("PK__Clients__3214EC27FF254FBD");
@@ -168,6 +185,8 @@ namespace CinemaDB
                 entity.Property(e => e.Stars)
                     .HasDefaultValueSql("((0.0))")
                     .HasColumnType("decimal(4, 2)");
+
+                 entity.HasAlternateKey(e => e.FName).HasName("AlternateKey_FName");
             });
 
             modelBuilder.Entity<Hall>(entity =>

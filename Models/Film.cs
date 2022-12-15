@@ -20,4 +20,6 @@ public partial class Film
     public decimal? Stars { get; set; }
 
     public virtual ICollection<Seance> Seances { get; } = new List<Seance>();
+
+    public virtual ICollection<Actor> Actors { get; } = new List<Actor>();
 }

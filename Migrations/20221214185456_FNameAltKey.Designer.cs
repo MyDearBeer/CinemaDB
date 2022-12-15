@@ -4,6 +4,7 @@ using CinemaDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CinemaDB.Migrations
 {
     [DbContext(typeof(CinemaDbContext))]
-    partial class CinemaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221214185456_FNameAltKey")]
+    partial class FNameAltKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,41 +25,6 @@ namespace CinemaDB.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("ActorFilm", b =>
-                {
-                    b.Property<int>("ActorsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FilmsId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ActorsId", "FilmsId");
-
-                    b.HasIndex("FilmsId");
-
-                    b.ToTable("FA", (string)null);
-                });
-
-            modelBuilder.Entity("CinemaDB.Models.Actor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SurName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id")
-                        .HasName("PK__Actors__3214EC27FF254FBK");
-
-                    b.ToTable("Actors");
-                });
 
             modelBuilder.Entity("CinemaDB.Models.Cinema", b =>
                 {
@@ -523,21 +491,6 @@ namespace CinemaDB.Migrations
                         .HasColumnType("int");
 
                     b.ToTable("Minicinemas", (string)null);
-                });
-
-            modelBuilder.Entity("ActorFilm", b =>
-                {
-                    b.HasOne("CinemaDB.Models.Actor", null)
-                        .WithMany()
-                        .HasForeignKey("ActorsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CinemaDB.Models.Film", null)
-                        .WithMany()
-                        .HasForeignKey("FilmsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("CinemaDB.Models.Order", b =>
