@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using Microsoft.EntityFrameworkCore;
 using CinemaDB.Models;
-
+using System.Linq;
 
 namespace CinemaDB
 {
@@ -44,10 +44,13 @@ namespace CinemaDB
         public virtual DbSet<MiniCinema> MiniCinemas { get; set; }
 
         public virtual DbSet<Actor> Actors { get; set; }
+
+        public IQueryable<Worker> GetMobNumByPos(string position) => FromExpression(() => GetMobNumByPos(position));
         public CinemaDbContext(DbContextOptions<CinemaDbContext> options)
            : base(options)
         {
-             Database.EnsureCreated();
+           // Database.EnsureDeleted();
+            Database.EnsureCreated();
         }
 
 
@@ -62,7 +65,7 @@ namespace CinemaDB
             
 
             Cinema cinema1 = new Cinema { Id = 1, CName = "Байрактар", CAddress = "вул. Ринкова", Halls = 6, WorkersCount = 31, Clients = 666, AdminPhone = "(096) 352-69-23" };
-            Cinema cinema2 = new Cinema { Id = 2, CName = "Бескінечне літо", CAddress = "вул. Лагерна, 4/1", Halls = 4, WorkersCount = 25, Clients = 410, AdminPhone = "(067) 783-11-22" };
+            Cinema cinema2 = new Cinema { Id = 2, CName = "Нескінченне літо", CAddress = "вул. Лагерна, 4/1", Halls = 4, WorkersCount = 25, Clients = 410, AdminPhone = "(067) 783-11-22" };
             //Position boss= new Position ("Керуючий кінотетру" );
             // Position sysAdmin = new Position("Системний адміністратор") ;
             // Position barman = new Position("Бармен");
@@ -73,6 +76,9 @@ namespace CinemaDB
              Worker worker1 = new Worker { Id = 1, CinemaId = cinema2.Id, WName = "Семен", WSurname = "Персунов", Passport = 77777, PositionId = sysAdmin.Id, Phone = "(099) 111-11-11", Salary = 30000 };
             Worker worker2 = new Worker { Id =2, CinemaId = cinema2.Id, WName = "Ольга", WSurname = "Дімітрео", Passport = 55555, PositionId = boss.Id, Phone = "(060) 345-97-34", Salary = 100000 };
             Worker worker3 = new Worker { Id = 3, CinemaId = cinema2.Id, WName = "Аліса", WSurname = "Двачевська", Passport = 66666, PositionId = barman.Id, Phone = "(099) 111-22-33", Salary = 28000 };
+            Worker worker4 = new Worker { Id = 4, CinemaId = cinema2.Id, WName = "Сергій", WSurname = "Електронов", Passport = 99999, PositionId = barman.Id, Phone = "(079) 050-10-13", Salary = 30000 };
+            Worker worker5 = new Worker { Id = 5, CinemaId = cinema2.Id, WName = "Міку", WSurname = "Хатсуне", Passport = 111111, PositionId = barman.Id, Phone = "(072) 031-15-25", Salary = 29000 };
+            Worker worker6 = new Worker { Id = 6, CinemaId = cinema2.Id, WName = "Слав'яна", WSurname = "Феокситова", Passport = 444444, PositionId = barman.Id, Phone = "(079) 785-31-55", Salary = 31000 };
             //Worker worker2 = new Worker(cinema2.Id, "Ольга", "Дімітрео", 55555, boss.Id, "(060) 345-97-34", 100000);
             //Worker worker3 = new Worker(cinema2.Id, "Аліса", "Двачевська", 66666, barman.Id, "(099) 111-22-33", 28000);
 
@@ -324,10 +330,10 @@ namespace CinemaDB
                 entity.HasOne(d => d.Position).WithMany(p => p.Workers)
                     .HasForeignKey(d => d.PositionId)
                     .HasConstraintName("FK__Workers__Positio__45F365D3");
-                entity.HasData(worker1, worker2, worker3);
+                entity.HasData(worker1, worker2, worker3,worker4,worker5,worker6);
             });
 
-      
+            modelBuilder.HasDbFunction(() => GetMobNumByPos(default));//function
             OnModelCreatingPartial(modelBuilder);
         }
 
