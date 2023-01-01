@@ -7,8 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Text.RegularExpressions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Threading.Tasks;
 
 namespace CinemaDB.Models
 {
@@ -30,8 +32,11 @@ namespace CinemaDB.Models
             optionsBuilder.UseLazyLoadingProxies();//lazy loading
             var options = optionsBuilder.UseSqlServer(connectionString).Options;
 
-            using (CinemaDbContext db = new CinemaDbContext(options))
-            {
+            
+                CinemaDbContext db = new CinemaDbContext(options);
+                string[] workersName = { "Олег", "Дмитро", "Ліза", "Настя", "Герман", "Джеймс", "Андрій", "Еліна" };
+                string[] workersSurName = { "Ставок", "Байрактар", "Залізо", "Українець", "Зеленський","Петрушка" };
+            string[] positionsName = { "Букер", "Маркетолог", "Кіномеханік", "Касир" };
                 var cinemas = db.Cinemas.ToList();
                 var workers = db.Workers.ToList();
                 var positions= db.Positions.ToList();
@@ -51,11 +56,11 @@ namespace CinemaDB.Models
                     db.SaveChanges();
 
                     }
-                    //else
-                    //{
-                    //    db.Workers.Remove(workers.FirstOrDefault(w => w.WName == "Олена"));
-                    //}
-                    db.SaveChanges();
+            else
+            {
+                db.Workers.Remove(workers.FirstOrDefault(w => w.WName == "Олена"));
+            }
+            db.SaveChanges();
 
 
                 //if (lena.WName == "Олена")
@@ -109,11 +114,14 @@ namespace CinemaDB.Models
 
                 //var getMobNumByPos = db.GetMobNumByPos("Бармен");
 
-                SqlParameter param = new SqlParameter("@position", "Бармен");
-                var getMobNumByPos = db.Workers.FromSqlRaw("SELECT * FROM GetMobNumByPos (@position)", param).ToList();
+                //SqlParameter param = new SqlParameter("@position", "Бармен");
+                //var getMobNumByPos = db.Workers.FromSqlRaw("SELECT * FROM GetMobNumByPos (@position)", param).ToList();
 
-                var procedure = db.Workers.FromSqlRaw("ShowNum").ToList();
+                //var procedure = db.Workers.FromSqlRaw("ShowNum").ToList();
 
+                object locker = new();
+
+            
 
                 foreach (Cinema cinema in cinemas)
                 {
@@ -189,26 +197,173 @@ namespace CinemaDB.Models
                 Console.WriteLine($"Максимальна зарплата:{maxSalary}");
                 Console.WriteLine($"Середня зарплата:{averageSalary}");
                 Console.WriteLine($"Сумв:{sumSalary}");
+            Console.WriteLine();
 
-                Console.WriteLine();
-                Console.WriteLine("Функція");
-                Console.WriteLine("Номера телефонів барменів:");
-                foreach (var worker in getMobNumByPos)
+            //Console.WriteLine();
+            //Console.WriteLine("Функція");
+            //Console.WriteLine("Номера телефонів барменів:");
+            //foreach (var worker in getMobNumByPos)
+            //{
+            //    Console.WriteLine($"{worker.WName}, {worker.Phone}");
+            //}
+
+            //Console.WriteLine("Процедурa");
+            //Console.WriteLine("Прізвища, які починаються на Д:");
+
+            //foreach (var worker in procedure)
+            //{
+            //    Console.WriteLine($"{worker.WSurname}, {worker.WName}");
+            //}
+
+            Semaphore sem = new Semaphore(1, 1);
+            AutoResetEvent waitHandler = new AutoResetEvent(true);
+
+            //for (int i = 1; i < 5; i++)
+            //{
+
+            //    Thread myThread1 = new(PrintWorker);
+            //    Thread myThread2 = new(PrintPosition);
+            //    myThread1.Start();
+            //    myThread2.Start();
+            //}
+
+            
+                Random rand = new Random();
+
+           async void PrintPosition()
+            {
+                bool acquiredLock = false;
+                //try
+                //{
+                //    Monitor.Enter(locker, ref acquiredLock);
+                //lock (locker)
+                //{
+                sem.WaitOne();
+                //waitHandler.WaitOne();
+                Position position = new Position
                 {
-                    Console.WriteLine($"{worker.WName}, {worker.Phone}");
+                    Id = new Random().Next(),
+                    PName = positionsName[new Random().Next(0, positionsName.Length)],
+                };
+
+               
+                while (await db.Positions.AnyAsync(p => p.PName == position.PName) == true|| await db.Positions.AnyAsync(p => p.Id == position.Id) == true)
+                {
+                    position.Id = new Random().Next();
+                    position.PName = positionsName[new Random().Next(0, positionsName.Length)];
+                    Console.WriteLine("Перевірка на існуючу посаду....");
                 }
 
-                Console.WriteLine("Процедурa");
-                Console.WriteLine("Прізвища, які починаються на Д:");
 
-                foreach (var worker in procedure)
+                Console.WriteLine("Додана посада");
+                await db.Positions.AddAsync(position);
+                await db.SaveChangesAsync();
+
+                Console.WriteLine($"{Thread.CurrentThread.Name}:{position.PName}");
+
+                Thread.Sleep(100);
+                positions = await db.Positions.ToListAsync();
+                sem.Release();
+            };
+
+                async void  PrintWorker()
                 {
-                    Console.WriteLine($"{worker.WSurname}, {worker.WName}");
+
+                    bool acquiredLock = false;
+                ////try
+                ////{
+                ////    Monitor.Enter(locker, ref acquiredLock);
+                ////lock (locker)
+                ////{
+                    sem.WaitOne();
+               // //waitHandler.WaitOne();
+                Worker work = new Worker
+                    {
+                        CinemaId = 2,
+                        WName = workersName[new Random().Next(0, workersName.Length)],
+                        WSurname = workersSurName[new Random().Next(0, workersSurName.Length)],
+                        Passport = new Random().Next(10000, 99999),
+                        PositionId = new Random().Next(0, 3),
+                        Phone = $"(0{new Random().Next(10, 99)}) {new Random().Next(100, 999)}-{new Random().Next(10, 99)}-{new Random().Next(10, 99)}",
+                        Salary = new Random().Next(5000, 70000)
+                    };
+
+                    // db.Workers.ToListAsync();
+                    while (await db.Workers.AnyAsync(w => w.WSurname == work.WSurname) == true || await db.Workers.AnyAsync(w => w.WName == work.WName) == true)
+                    {
+                        work.WName = workersName[new Random().Next(0, workersName.Length)];
+                        work.WSurname = workersSurName[new Random().Next(0, workersSurName.Length)];
+                        Console.WriteLine("Перевірка на існуючого робітника....");
+                    }
+                
+
+                    Console.WriteLine("Доданий робітник");
+                   await db.Workers.AddAsync(work);
+                    await db.SaveChangesAsync();
+
+                    Console.WriteLine($"{Thread.CurrentThread.Name}:{work.WName} {work.WSurname}");
+                    
+                    Thread.Sleep(100);
+                workers= await db.Workers.ToListAsync();
+                sem.Release();
+      
+                //// waitHandler.Set();
+                ////}
+                ////finally
+                ////{
+                ////    if (acquiredLock)
+                ////    {
+                ////        Monitor.Exit(locker);
+
+                ////    }
+                ////}
+
+
+                //// }
+            }
+
+
+            for (int i = 1; i < 5; i++)
+            {
+
+//                Task[] tasks = new Task[2]
+//{
+//      new Task(PrintWorker),
+//              new Task(PrintPosition)
+//            };
+
+                //foreach (var t in tasks)
+                //    t.Start();
+                //Task.WaitAll(tasks);
+
+                Task task1 = new Task(()=>
+                {
+                
+                    PrintWorker();
+                    
                 }
+            );
+                Task task2 = new Task(() =>
+                {
+                 
+
+                    PrintPosition();
+                   
+                });
+                task1.Start();
+                 task2.Start();
+                task1.Wait();
+                task2.Wait();
+            }
+
+
+
+
+            Console.WriteLine();
             }
 
            
         }
         }
-    }
+    
 

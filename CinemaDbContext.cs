@@ -13,7 +13,7 @@ namespace CinemaDB
     {
         public CinemaDbContext()
         {
-            //Database.EnsureDeleted();
+          //  Database.EnsureDeleted();
           // Database.EnsureCreated();
         }
 
